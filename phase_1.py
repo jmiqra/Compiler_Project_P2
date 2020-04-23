@@ -210,6 +210,10 @@ lexer.input(input_str)
 input_file = open(str(sys.argv[1]), "r")
 if input_file.mode == 'r':
 	input_str = input_file.read()
+
+lines = input_str.splitlines()
+print(lines)
+
 lexer.input(input_str)
 
 def get_next_token():
