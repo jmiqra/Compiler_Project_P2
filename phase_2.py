@@ -33,7 +33,7 @@ def program_start():
     return decl() and program()
 
 def program():
-    next_token()
+    #next_token()
     if t == None:
         print("Program ended successfully!")
         return True
@@ -42,7 +42,7 @@ def program():
 
 
 def decl():
-    print("------decl")
+    print("------decl ",t)
     if(t.value in tokens.type_list or t.value == tokens.T_Void):
         next_token()
         if(t.type == tokens.T_Identifier):
@@ -50,7 +50,7 @@ def decl():
             if(t.value == tokens.T_LP):
                 return functionDecl()
             else:
-                return variableDecl()
+                return variableDecl() and next_token()
         else:
             print("Syntax Error 1 ", t)
     else:
@@ -67,25 +67,28 @@ def formals():
     print("------formals")
     if t.value == tokens.T_RP:
         return True
-    elif t.value in tokens.type_list:
-        next_token()
-        if(t.type == tokens.T_Identifier):
+    while True:
+        if t.value in tokens.type_list:
             next_token()
-            if t.value == tokens.T_Comma and (next_token() and t.value != tokens.T_RP):
-                return next_token() and formals()
-            elif t.value == tokens.T_RP:
-                return True
-        else:
-            handleError(t)
+            if(t.type == tokens.T_Identifier):
+                next_token()
+                if t.value == tokens.T_Comma and (next_token() and t.value != tokens.T_RP):
+                    continue
+                elif t.value == tokens.T_RP:
+                    return True
+            else:
+                handleError(t)
+                return False
 
 def stmtBlock():
-    print("------stmtBlock")
+    print("------stmtBlock", t)
     if t.value == tokens.T_LC:
         next_token()
         if t.value == tokens.T_RC:
             return True
         else:
             stmtBlockParam = variableDecl_2() and t.value == tokens.T_RC
+            print("~~~~~~ ", t)
             next_token()
             return stmtBlockParam
 
@@ -95,6 +98,7 @@ def variableDecl():
         return True
     else:
         handleError(t)
+        return False
 
 def variableDecl_2():
     print("------variableDecl_2")
@@ -147,7 +151,13 @@ def stmt():
     
     elif t.value == tokens.T_For:
         print("For found from Stmt")
-        return  next_token() and forStmt() and next_token() and stmt()
+        if next_token() and forStmt():
+            if t.value == tokens.T_RC:
+                print("RightCurly found after forStmt")
+                return True
+            else:
+                print("stmt from forStmt")
+                return stmt()
     
     elif t.value == tokens.T_Break:
         print("Break found from Stmt")
@@ -237,7 +247,7 @@ def forStmt():
             print("First expr not present inside forStmt")
             pass
         #1 for( i = 1 )
-        elif not expr() or (next_token() and t.value != tokens.T_SemiColon):
+        elif not expr() or t.value != tokens.T_SemiColon:
             print("false for wrong first expr part inside forStmt")
             return False
         
@@ -359,18 +369,20 @@ def actuals():
     print("------actuals")
     if t.value == tokens.T_RP:
         return True
-    next_token()
-    
-    if not expr():
-        return False
-    next_token()
-    
-    if t.value == tokens.T_Comma and (next_token() and t.value != tokens.T_RP):
-        return next_token() and actuals()
-    elif t.value == tokens.T_RP:
-        return True
-    else:
-        return False
+
+    while True:
+        print("insilde actual loop ", t)    
+        if not expr():
+            return False
+        
+        if t.value == tokens.T_Comma and (next_token() and t.value != tokens.T_RP):
+            continue
+        if t.value == tokens.T_RP:
+            next_token()
+            return True
+        else:
+            handleError(t)
+            return False
 
 
 

@@ -1,22 +1,20 @@
-void main() {
-  int a;
-  bool done;
 
-  a = 0;
-  while (a < 10) {
-	Print(a, " ");
-	a = a + 1;
-	if (a == 5) break;
-  }
-  if (a % 2 == 0)
-     a = 100;
-  else
-     done = true;
 
-  for (; a <= 10 || done; a = a + 1) {
-     Print(a, " ");
-     if (a == 10) a;
-  }
-  return;
+int foo(int a, double b, bool c) {
+  return a + 2;
 }
+
+void main() {
+  int b;
+  int a;
+  double d;
+
+  d = 2 + 3 * 4 - (6 / 2);
+  b = ReadInteger();
+  a = b + 2;
+  Print(a, b, d);
+  foo(a, d, !true);
+  foo(a + 2, d/2, a == b && d >= 1.0);
+}
+
 
