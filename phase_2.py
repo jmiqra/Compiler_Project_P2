@@ -19,9 +19,24 @@ def next_token():
     else:
         return False
 
+def find_line(t):
+    return phase_1.lines[t.lineno-1]
+
+def find_col(t):
+    #str(find_column(input_str, t)) + "-" + 
+    #str(find_column(input_str, t)+len(str(t.value))-1)
+    return phase_1.find_column(phase_1.input_str, t) - 1
+
 def handleError(t):
     print("*** Error Line ", t.lineno, ".")
-    print(phase_1.lines[t.lineno-1])
+    print(find_line(t))
+    #print(find_col(t))
+    str = ""
+    for i in range(find_col(t)):
+        str += " "
+    for j in range(len(t.value)):
+        str += "^"
+    print(str)
     print("*** syntax error")
     pass
 
@@ -313,11 +328,6 @@ def printStmt():
 def expr():
     print("------expr ", t)
 
-    """if t.value == tokens.T_ReadInteger:
-        return True
-    elif t.value == tokens.T_ReadLine:
-        return True"""
-    
     if t.value == tokens.T_Minus:
         return next_token() and expr()
     
@@ -350,6 +360,10 @@ def expr():
         next_token()
         if (t.value in tokens.op_list): 
             return next_token() and expr()
+        elif t.value == ".":
+            next_token()
+            handleError(t)
+            return False
         else:
             print("ture from expr Constant", t.value)
             return True
