@@ -212,7 +212,7 @@ if input_file.mode == 'r':
 	input_str = input_file.read()
 
 lines = input_str.splitlines()
-print(lines)
+#print(lines)
 
 lexer.input(input_str)
 
