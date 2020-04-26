@@ -6,14 +6,25 @@ import sys
 import tokens
 import phase_1
 
+errorFound = False
+
+def printDebug(str):
+    #print(str)
+    return True
+
+def printFunction(str):
+    global errorFound 
+    if not errorFound:
+        print(str)
+    return True
 
 t = phase_1.get_next_token()
-print(t)
+printDebug(t)
 
 def next_token():
     global t
     t = phase_1.get_next_token()
-    print(t)
+    printDebug(t)
     if t != None:
         return True
     else:
@@ -28,36 +39,39 @@ def find_col(t):
     return phase_1.find_column(phase_1.input_str, t) - 1
 
 def handleError(t):
-    print("*** Error Line ", t.lineno, ".")
-    print(find_line(t))
-    #print(find_col(t))
-    str = ""
+    printFunction("*** Error Line " + str(t.lineno) + ".")
+    printFunction(find_line(t))
+    #printDebug(find_col(t))
+    err_str = ""
     for i in range(find_col(t)):
-        str += " "
+        err_str += " "
     for j in range(len(t.value)):
-        str += "^"
-    print(str)
-    print("*** syntax error")
+        err_str += "^"
+    printFunction(err_str)
+    printFunction("*** syntax error")
+    global errorFound
+    errorFound = True
     pass
 
 def program_start():
-    print("------program")
+    printDebug("------program")
     if t == None:
-        print("Empty program is syntactically incorrect.")
+        printDebug("Empty program is syntactically incorrect.")
+        handleError(t)
         return False
     return decl() and program()
 
 def program():
     #next_token()
     if t == None:
-        print("Program ended successfully!")
+        printDebug("Program ended successfully!")
         return True
     else:
         return program_start()
 
 
 def decl():
-    print("------decl ",t)
+    printDebug("------decl " + str(t))
     if(t.value in tokens.type_list or t.value == tokens.T_Void):
         next_token()
         if(t.type == tokens.T_Identifier):
@@ -67,19 +81,23 @@ def decl():
             else:
                 return variableDecl() and next_token()
         else:
-            print("Syntax Error 1 ", t)
+            printDebug("Syntax Error 1 " + str(t))
+            handleError(t)
+            return False
     else:
-         print("Syntax Error 2 ", t)
+        printDebug("Syntax Error 2 " + str(t))
+        handleError(t)
+        return False
 
 def functionDecl():
-    print("------funtionDecl")
+    printDebug("------funtionDecl")
     next_token()
     params = formals()
     next_token()
     return params and stmtBlock()
 
 def formals():
-    print("------formals")
+    printDebug("------formals")
     if t.value == tokens.T_RP:
         return True
     while True:
@@ -96,19 +114,19 @@ def formals():
                 return False
 
 def stmtBlock():
-    print("------stmtBlock", t)
+    printDebug("------stmtBlock" + str(t))
     if t.value == tokens.T_LC:
         next_token()
         if t.value == tokens.T_RC:
             return True
         else:
             stmtBlockParam = variableDecl_2() and t.value == tokens.T_RC
-            print("~~~~~~ ", t)
+            printDebug("~~~~~~ " + str(t))
             next_token()
             return stmtBlockParam
 
 def variableDecl():
-    print("------variableDecl")
+    printDebug("------variableDecl")
     if(t.value == tokens.T_SemiColon):
         return True
     else:
@@ -116,7 +134,7 @@ def variableDecl():
         return False
 
 def variableDecl_2():
-    print("------variableDecl_2")
+    printDebug("------variableDecl_2")
     #if t.value == tokens.T_RC:
     #        return True
     if t.value in tokens.type_list and next_token() and t.type == tokens.T_Identifier:
@@ -126,10 +144,10 @@ def variableDecl_2():
         while True:
             if stmt():
                 if t.value == tokens.T_RC:
-                    print("true from varDecl_2")
+                    printDebug("true from varDecl_2")
                     return True
                 if(t.value == tokens.T_Else):
-                    print("else found")
+                    printDebug("else found")
                     return True
                 next_token()
                 pass
@@ -138,83 +156,85 @@ def variableDecl_2():
 
 
 def stmt():
-    print("------stmt")
-    print(t)
+    printDebug("------stmt")
+    printDebug(t)
     if t.value == tokens.T_RC:
-        print("True Stmt for RightCurly")
+        printDebug("True Stmt for RightCurly")
         return True
     #next_token()
     if t.value == tokens.T_If:
-        print("If found from Stmt")
+        printDebug("If found from Stmt")
         if next_token() and ifStmt():
             if t.value == tokens.T_RC:
-                print("RightCurly found after ifStmt")
+                printDebug("RightCurly found after ifStmt")
                 return True
             else:
-                print("stmt from ifStmt")
+                printDebug("stmt from ifStmt")
                 return stmt()
     
     elif t.value == tokens.T_While:
-        print("While found from Stmt")
+        printDebug("While found from Stmt")
         if next_token() and whileStmt():
             if t.value == tokens.T_RC:
-                print("RightCurly found after whileStmt")
+                printDebug("RightCurly found after whileStmt")
                 return True
             else:
-                print("stmt from whileStmt")
+                printDebug("stmt from whileStmt")
                 return stmt()
     
     elif t.value == tokens.T_For:
-        print("For found from Stmt")
+        printDebug("For found from Stmt")
         if next_token() and forStmt():
             if t.value == tokens.T_RC:
-                print("RightCurly found after forStmt")
+                printDebug("RightCurly found after forStmt")
                 return True
             else:
-                print("stmt from forStmt")
+                printDebug("stmt from forStmt")
                 return stmt()
     
     elif t.value == tokens.T_Break:
-        print("Break found from Stmt")
+        printDebug("Break found from Stmt")
         return  next_token() and breakStmt() and next_token() and stmt()
     
     elif t.value == tokens.T_Return:
-        print("Return found from Stmt")
+        printDebug("Return found from Stmt")
         return  next_token() and returnStmt() # and next_token() and stmt()
     
     elif t.value == tokens.T_Print: # and next_token() and t.value == tokens.T_LP:
-        print("Print found from Stmt")
+        printDebug("printDebug found from Stmt")
         return  next_token() and printStmt() and next_token() and stmt()
     
     elif t.value == tokens.T_LC:
         return stmtBlock()
     
     elif t.value == tokens.T_SemiColon:
-        print("Semicolon found from stmt")
+        printDebug("Semicolon found from stmt")
         return True
     
     elif expr() and t.value == tokens.T_SemiColon: #need to work:  prev work expr() semi nexttok stmt
-        print("Expr and Semicolon found from stmt ", t.value)
+        printDebug("Expr and Semicolon found from stmt " + str(t.value))
         return True
-        #print("ret from stmt ")
+        #printDebug("ret from stmt ")
         #var = expr() and t.value == tokens.T_SemiColon and next_token()     
         #work for single statement
     #elif t != None:
-    #    print("true from stmt last else")
+    #    printDebug("true from stmt last else")
     #    return stmt()
 
 def ifStmt():
-    print("----XXXXXXXXXXXXXXXXXXXXXXXXXx--ifStmt")
+    printDebug("----XXXXXXXXXXXXXXXXXXXXXXXXXx--ifStmt")
     if t.value == tokens.T_LP:
         ifParam = next_token() and expr() and t.value == tokens.T_RP
         if not ifParam:
-            print("error from if ")
+            printDebug("error from if ")
+            handleError(t)
             return False
         
-        print("inside ifParam true",t.value)
+        printDebug("inside ifParam true" + t.value)
         
         if next_token() and not stmt():
-            print("false from ifStmt")
+            printDebug("false from ifStmt")
+            handleError(t)
             return False
 
         #if(t!=None and t.value != tokens.T_Else):
@@ -222,16 +242,17 @@ def ifStmt():
             next_token()
         
         if t != None and t.value == tokens.T_Else:
-            print("else found----------------------------------------------------------------------")
+            printDebug("else found----------------------------------------------------------------------")
             next_token()
             if not stmt():
-                print("False from if.. else..")
+                printDebug("False from if.. else..")
+                handleError(t)
                 return False
             else:
-                print("true for if with else----------------------")
+                printDebug("true for if with else----------------------")
                 return True
         else:
-            print("true for if----------------------")
+            printDebug("true for if----------------------")
             return True
     else:
         handleError(t)
@@ -239,107 +260,117 @@ def ifStmt():
 
 
 def whileStmt():
-    print("------whileStmt")
+    printDebug("------whileStmt")
     if t.value == tokens.T_LP:
         whileParam = next_token() and expr() and t.value == tokens.T_RP
         if not whileParam:
-            print("error from whileStmt")
+            printDebug("error from whileStmt")
+            handleError(t)
             return False
         if next_token() and not stmt():
-            print("returnning false from whileStmt")
+            printDebug("returnning false from whileStmt")
+            handleError(t)
             return False
-        print("true for while----------------------")
+        printDebug("true for while----------------------")
         return True
     else:
+        handleError(t)
         return False 
 
 def forStmt():
-    print("------forStmt")
+    printDebug("------forStmt")
     if t.value == tokens.T_LP:
-        print("LeftParen found forStmt")
-        #1 for( ; )
+        printDebug("LeftParen found forStmt")
+        #1 for null init
         if next_token() and t.value == tokens.T_SemiColon:
-            print("First expr not present inside forStmt")
+            printDebug("First expr not present inside forStmt")
             pass
-        #1 for( i = 1 )
+        #1 for init
         elif not expr() or t.value != tokens.T_SemiColon:
-            print("false for wrong first expr part inside forStmt")
+            printDebug("false for wrong first expr part inside forStmt")
+            handleError(t)
             return False
         
-        #2 for( i = 1; i > 5; )
-        print("inside forStmt token -> ", t)
+        #2 for init and cond
+        printDebug("inside forStmt token -> " + str(t))
         next_token()
         if not expr() or not t.value == tokens.T_SemiColon:
-            print("False for wrong second part inside forStmt")
+            printDebug("False for wrong second part inside forStmt")
+            handleError(t)
             return False
 
-        #3 for( i = 1; i > 5; )
+        #3 for init cond update
         next_token()
-        print("start forStmt last part -> ", t)
+        printDebug("start forStmt last part -> " + str(t))
         if t.value == tokens.T_RP:
-            print("No third part inside forStmt")
+            printDebug("No third part inside forStmt")
             return next_token() and stmt()
         elif expr() and t.value == tokens.T_RP:
             return next_token() and stmt()
     else:
+        handleError(t)
         return False
 
 def breakStmt():
-    print("------breakStmt")
+    printDebug("------breakStmt")
     if t.value == tokens.T_SemiColon:
-        print("True from breakStmt", t)
+        printDebug("True from breakStmt" + str(t))
         return True
 
 def returnStmt():
-    print("------returnStmt")
+    printDebug("------returnStmt")
     if t.value == tokens.T_SemiColon:
-        print("return done without expr", t)
+        printDebug("return done without expr" + str(t))
         return True
     elif expr() and t.value == tokens.T_SemiColon and next_token(): # next_token should be removed?
-        print("return done with expr", t)
+        printDebug("return done with expr" + str(t))
         return True
     else:
+        handleError(t)
         return False
         
 def printStmt():
-    print("------printStmt")
+    printDebug("------printStmt")
     if t.value == tokens.T_LP:
         while True:
-            print("enter print loop--")
+            printDebug("enter printDebug loop--")
             next_token()        
             if not expr():
-                print("false from printStmt")
+                printDebug("false from printStmt")
+                handleError(t)
                 return False
             if t.value == tokens.T_Comma:
-                print("Comma inside printStmt")
+                printDebug("Comma inside printStmt")
                 continue
             elif t.value == tokens.T_RP:
-                print("RightParen found in printStmt")
+                printDebug("RightParen found in printStmt")
                 next_token()
                 if t != None and t.value == tokens.T_SemiColon:
-                    print("semicolon after print")
+                    printDebug("semicolon after printDebug")
                     return True
                 else:
+                    handleError(t)
                     return False
     else:
+        handleError(t)
         return False
 
 
 def expr():
-    print("------expr ", t)
+    printDebug("------expr " + str(t))
 
     if t.value == tokens.T_Minus:
         return next_token() and expr()
     
     elif t.value == tokens.T_LP:
-        print("LeftParen found from expr")
+        printDebug("LeftParen found from expr")
         if next_token() and expr() and t.value == tokens.T_RP:
             next_token()
             if t.value in tokens.op_list:
-                print("op_list found inside LeftParen expr")
+                printDebug("op_list found inside LeftParen expr")
                 return next_token() and expr()
             else:
-                print("true from expr LeftParen cond")
+                printDebug("true from expr LeftParen cond")
                 return True
 
     elif t.value == tokens.T_Not:
@@ -353,7 +384,7 @@ def expr():
         elif (t.value == tokens.T_Equal) or (t.value in tokens.op_list): 
             return next_token() and expr()
         else:
-            print("ture from expr Identifier", t.value)
+            printDebug("ture from expr Identifier" + str(t.value))
             return True
     
     elif t.type in tokens.const_list:
@@ -365,28 +396,30 @@ def expr():
             handleError(t)
             return False
         else:
-            print("ture from expr Constant", t.value)
+            printDebug("ture from expr Constant" + str(t.value))
             return True
     
     elif t.value == tokens.T_ReadInteger or t.value == tokens.T_ReadLine:
-        print("ReadInteger or ReadLine found")
+        printDebug("ReadInteger or ReadLine found")
         if (next_token() and t.value == tokens.T_LP) and (next_token() and t.value == tokens.T_RP):
             next_token()
             return True
 
     else:
-        print("exit expr false ", t.value)
+        printDebug("exit expr false " + str(t.value))
+        handleError(t)
         return False
 
 
 def actuals():
-    print("------actuals")
+    printDebug("------actuals")
     if t.value == tokens.T_RP:
         return True
 
     while True:
-        print("insilde actual loop ", t)    
+        printDebug("insilde actual loop " + str(t))    
         if not expr():
+            handleError(t)
             return False
         
         if t.value == tokens.T_Comma and (next_token() and t.value != tokens.T_RP):
@@ -402,7 +435,7 @@ def actuals():
 
 #start program
 def main():
-    print(program_start())
+    printDebug(program_start())
 
 if __name__ == "__main__":
     main()
