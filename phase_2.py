@@ -39,25 +39,30 @@ def find_col(t):
     return phase_1.find_column(phase_1.input_str, t) - 1
 
 def handleError(t):
-    printFunction("*** Error Line " + str(t.lineno) + ".")
-    printFunction(find_line(t))
-    #printDebug(find_col(t))
-    err_str = ""
-    for i in range(find_col(t)):
-        err_str += " "
-    for j in range(len(t.value)):
-        err_str += "^"
-    printFunction(err_str)
-    printFunction("*** syntax error")
     global errorFound
-    errorFound = True
-    pass
+    if not errorFound:
+        print()
+        printFunction("*** Error Line " + str(t.lineno) + ".")
+        printFunction(find_line(t))
+        #printDebug(find_col(t))
+        err_str = ""
+        for i in range(find_col(t)):
+            err_str += " "
+        for j in range(len(t.value)):
+            err_str += "^"
+        printFunction(err_str)
+        printFunction("*** syntax error")
+        print()
+        errorFound = True
+        return True
+    else:
+        return False
 
 def program_start():
     printDebug("------program")
     if t == None:
-        printDebug("Empty program is syntactically incorrect.")
-        handleError(t)
+        printFunction("Empty program is syntactically incorrect.")
+        #handleError(t)
         return False
     return decl() and program()
 
