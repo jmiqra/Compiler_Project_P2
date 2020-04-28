@@ -5,6 +5,11 @@
 import sys
 import tokens
 import phase_1
+from treelib.treelib import Node, Tree
+
+astree = Tree()
+astree.create_node("   .Program", "Program") # abstract syntax tree root
+parent = "Program"
 
 errorFound = False
 
@@ -76,12 +81,26 @@ def program():
 
 
 def decl():
+    global parent
     printDebug("------decl " + str(t))
     if(t.value in tokens.type_list or t.value == tokens.T_Void):
+        functionType = t.value
         next_token()
         if(t.type == tokens.T_Identifier):
+            ident = t.value
             next_token()
             if(t.value == tokens.T_LP):
+                
+                node_label = "  " + str(t.lineno) + "." + "FnDecl:"
+                astree.create_node( node_label, "FnDecl", parent=parent)
+                
+                parent = "FnDecl"
+                node_label = "   " + "." + "(return type) Type: " + functionType
+                astree.create_node( node_label, "Type", parent=parent)
+
+                node_label = "  " + str(t.lineno) + "." + "Identifier: " + ident
+                astree.create_node( node_label, "Identifier", parent=parent)
+
                 return functionDecl()
             else:
                 return variableDecl() and next_token()
@@ -120,6 +139,12 @@ def formals():
 
 def stmtBlock():
     printDebug("------stmtBlock" + str(t))
+    
+    global parent
+    node_label = "   " + "." + "(body) StmtBlock:"
+    astree.create_node( node_label, "StmtBlock", parent= parent)
+    parent = "StmtBlock"
+    
     if t.value == tokens.T_LC:
         next_token()
         if t.value == tokens.T_RC:
@@ -336,6 +361,12 @@ def returnStmt():
         
 def printStmt():
     printDebug("------printStmt")
+
+    global parent
+    node_label = "   " + "." + "PrintStmt:"
+    astree.create_node( node_label, "PrintStmt", parent= parent)
+    parent = "PrintStmt"
+
     if t.value == tokens.T_LP:
         while True:
             printDebug("enter printDebug loop--")
@@ -393,6 +424,11 @@ def expr():
             return True
     
     elif t.type in tokens.const_list:
+        
+        constant = str(t.type).split("_")[1]
+        node_label = "  " + str(t.lineno) + "." + "(args) " + constant + ": " + t.value
+        astree.create_node( node_label, constant, parent=parent)
+        
         next_token()
         if (t.value in tokens.op_list): 
             return next_token() and expr()
@@ -441,6 +477,7 @@ def actuals():
 #start program
 def main():
     printDebug(program_start())
+    astree.show(key = False, line_type = 'ascii-sp')
 
 if __name__ == "__main__":
     main()
