@@ -43,6 +43,10 @@ def find_col(t):
     #str(find_column(input_str, t)+len(str(t.value))-1)
     return phase_1.find_column(phase_1.input_str, t) - 1
 
+def find_node_id(t, id):
+    node_id = id + "_" + str(t.lineno) + "_" + str(find_col(t))
+    return node_id
+
 def handleError(t):
     global errorFound
     if not errorFound:
@@ -91,15 +95,19 @@ def decl():
             next_token()
             if(t.value == tokens.T_LP):
                 
+                node_id = find_node_id(t, "FnDecl")
                 node_label = "  " + str(t.lineno) + "." + "FnDecl:"
-                astree.create_node( node_label, "FnDecl", parent=parent)
+                astree.create_node( node_label, node_id, parent=parent)
                 
-                parent = "FnDecl"
+                parent = node_id
+                
+                node_id = find_node_id(t, "Type")
                 node_label = "   " + "." + "(return type) Type: " + functionType
-                astree.create_node( node_label, "Type", parent=parent)
+                astree.create_node( node_label, node_id, parent=parent)
 
+                node_id = find_node_id(t, "Identifier")
                 node_label = "  " + str(t.lineno) + "." + "Identifier: " + ident
-                astree.create_node( node_label, "Identifier", parent=parent)
+                astree.create_node( node_label, node_id, parent=parent)
 
                 return functionDecl()
             else:
@@ -142,8 +150,9 @@ def stmtBlock():
     
     global parent
     node_label = "   " + "." + "(body) StmtBlock:"
-    astree.create_node( node_label, "StmtBlock", parent= parent)
-    parent = "StmtBlock"
+    node_id = find_node_id(t, "StmtBlock")
+    astree.create_node( node_label, node_id , parent= parent)
+    parent = node_id
     
     if t.value == tokens.T_LC:
         next_token()
@@ -363,9 +372,10 @@ def printStmt():
     printDebug("------printStmt")
 
     global parent
+    node_id = find_node_id(t, "PrintStmt")
     node_label = "   " + "." + "PrintStmt:"
-    astree.create_node( node_label, "PrintStmt", parent= parent)
-    parent = "PrintStmt"
+    astree.create_node( node_label, node_id, parent= parent)
+    parent = node_id
 
     if t.value == tokens.T_LP:
         while True:
@@ -426,8 +436,9 @@ def expr():
     elif t.type in tokens.const_list:
         
         constant = str(t.type).split("_")[1]
+        node_id = find_node_id(t, constant)
         node_label = "  " + str(t.lineno) + "." + "(args) " + constant + ": " + t.value
-        astree.create_node( node_label, constant, parent=parent)
+        astree.create_node( node_label, node_id, parent=parent)
         
         next_token()
         if (t.value in tokens.op_list): 
@@ -477,7 +488,8 @@ def actuals():
 #start program
 def main():
     printDebug(program_start())
-    astree.show(key = False, line_type = 'ascii-sp')
+    if errorFound == False:
+        astree.show(key = False, line_type = 'ascii-sp')
 
 if __name__ == "__main__":
     main()
