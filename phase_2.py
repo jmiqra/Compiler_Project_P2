@@ -219,11 +219,28 @@ def variableDecl():
         return False
 
 def variableDecl_2():
+    global parent
+    prevPar = parent
     printDebug("------variableDecl_2")
     #if t.value == tokens.T_RC:
     #        return True
+    dataType = t.value
     if t.value in tokens.type_list and next_token() and t.type == tokens.T_Identifier:
+        ident = t.value
         next_token()
+        
+        node_id = find_node_id(t, "VarDecl")
+        node_label = "  " + str(t.lineno) + "." + "VarDecl:"
+        astree.create_node( node_label, node_id, parent=parent)
+        
+        parent = node_id
+
+        node_label = "   " + "." + "Type: " + dataType
+        astree.create_node( node_label, find_node_id(t, "Type"), parent=parent)
+
+        node_label = "  " + str(t.lineno) + "." + "Identifier: " + ident
+        astree.create_node( node_label, find_node_id(t, "Identifier"), parent=parent)
+        update_parent(prevPar)
         return variableDecl() and next_token() and variableDecl_2()
     else:
         while True:
