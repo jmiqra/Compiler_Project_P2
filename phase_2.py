@@ -586,14 +586,65 @@ def expr():
             return True and update_parent(prevPar)
     
     elif t.type in tokens.const_list:
-        # need to update for constant without args
+        
+        constantVal = str(t.value)
+        # done update for constant without args
         constant = str(t.type).split("_")[1]
-        node_id = find_node_id(t, constant)
-        node_label = "  " + str(t.lineno) + "." + "(args) " + constant + ": " + t.value
-        astree.create_node( node_label, node_id, parent=parent)
+        if t.type == tokens.T_StringConstant:
+            constantType = "(args) " + constant
+        else:
+            constantType = constant
+
+        """node_id = find_node_id(t, constant)
+        node_label = "  " + str(t.lineno) + "." + "(args) " + constant + ": " + constantVal
+        astree.create_node( node_label, node_id, parent=parent)"""
         
         next_token()
-        if (t.value in tokens.op_list): 
+        
+        exprType = "ArithmeticExpr"
+        if assignTreeRoot == "":
+            assignTreeRoot = prevPar
+
+        if (t.value in tokens.op_list):
+            currOperator = str(t.value)
+            if prevOperator == "":
+                exprTreeRoot = find_node_id(t, exprType)
+                exprTree.create_node("  " + str(t.lineno) + "." + exprType + ":", exprTreeRoot)
+                exprTree.create_node("  " + str(t.lineno) + "." + constantType + ": " +  constantVal, find_node_id(t, constantType), parent=exprTreeRoot)
+                exprTree.create_node("  " + str(t.lineno) + "." + "Operator" + ": " + currOperator, find_node_id(t, "Operator"), parent=exprTreeRoot)
+                prevOperator = currOperator
+                lastTreeRoot = exprTreeRoot
+
+            elif tokens.precedence_list[prevOperator] >= tokens.precedence_list[currOperator]:
+
+                if currentTreeRoot != "":
+                    exprTree.create_node("  " + str(t.lineno) + "." + constantType + ": " +  constantVal, find_node_id(t, constantType), parent=currentTreeRoot)
+                    currentTreeRoot = ""
+                
+                else:
+                    exprTree.create_node("  " + str(t.lineno) + "." + constantType + ": " +  constantVal, find_node_id(t, constantType), parent=exprTreeRoot)
+                
+                tempTree=Tree()
+                tempTreeRoot = find_node_id(t, exprType)
+                tempTree.create_node("  " + str(t.lineno) + "." + exprType + ":", tempTreeRoot)
+                tempTree.paste(tempTreeRoot, exprTree)
+                tempTree.create_node("  " + str(t.lineno) + ".Operator: " + currOperator, find_node_id(t, "Operator"), parent=tempTreeRoot)            
+                exprTree = tempTree
+                exprTreeRoot = tempTreeRoot
+                prevOperator = currOperator
+                lastTreeRoot = tempTreeRoot
+
+            elif tokens.precedence_list[prevOperator] < tokens.precedence_list[currOperator]:
+                tempTree=Tree()
+                tempTreeRoot = find_node_id(t, exprType)
+                tempTree.create_node("  " + str(t.lineno) + "." + exprType + ":", tempTreeRoot)
+                tempTree.create_node("  " + str(t.lineno) + "." + constantType + ": " +  constantVal, find_node_id(t, constantType), parent=tempTreeRoot)
+                tempTree.create_node("  " + str(t.lineno) + ".Operator: " + currOperator, find_node_id(t, "Operator"), parent=tempTreeRoot)            
+                exprTree.paste(exprTreeRoot, tempTree)
+                prevOperator = currOperator
+                lastTreeRoot = tempTreeRoot
+                currentTreeRoot = tempTreeRoot
+
             return next_token() and expr()
         elif t.value == ".":
             next_token()
@@ -601,7 +652,15 @@ def expr():
             return False
         else:
             printDebug("ture from expr Constant" + str(t.value))
-            return True
+
+            if exprTree:
+                exprTree.create_node("  " + str(t.lineno) + "." + constantType + ": " +  constantVal, find_node_id(t, constantType), parent=lastTreeRoot)
+                astree.paste(assignTreeRoot, exprTree)
+                initExprTree()
+            else:
+                astree.create_node("  " + str(t.lineno) + "." + constantType + ": " +  constantVal, find_node_id(t, constantType), parent=assignTreeRoot)
+
+            return True and update_parent(prevPar)
     
     elif t.value == tokens.T_ReadInteger or t.value == tokens.T_ReadLine:
         printDebug("ReadInteger or ReadLine found")
