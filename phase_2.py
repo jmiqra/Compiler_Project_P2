@@ -47,6 +47,12 @@ def find_node_id(t, id):
     node_id = id + "_" + str(t.lineno) + "_" + str(find_col(t))
     return node_id
 
+def update_parent(par):
+    global parent
+    parent = par
+    return True
+
+
 def handleError(t):
     global errorFound
     if not errorFound:
@@ -86,32 +92,42 @@ def program():
 
 def decl():
     global parent
+    prevPar = parent
     printDebug("------decl " + str(t))
     if(t.value in tokens.type_list or t.value == tokens.T_Void):
-        functionType = t.value
+        dataType = t.value
         next_token()
         if(t.type == tokens.T_Identifier):
             ident = t.value
             next_token()
             if(t.value == tokens.T_LP):
-                
                 node_id = find_node_id(t, "FnDecl")
                 node_label = "  " + str(t.lineno) + "." + "FnDecl:"
                 astree.create_node( node_label, node_id, parent=parent)
                 
                 parent = node_id
                 
-                node_id = find_node_id(t, "Type")
-                node_label = "   " + "." + "(return type) Type: " + functionType
-                astree.create_node( node_label, node_id, parent=parent)
+                node_label = "   " + "." + "(return type) Type: " + dataType
+                astree.create_node( node_label, find_node_id(t, "Type"), parent=parent)
 
-                node_id = find_node_id(t, "Identifier")
                 node_label = "  " + str(t.lineno) + "." + "Identifier: " + ident
-                astree.create_node( node_label, node_id, parent=parent)
+                astree.create_node( node_label, find_node_id(t, "Identifier"), parent=parent)
 
-                return functionDecl()
+                return functionDecl() and update_parent(prevPar)
             else:
-                return variableDecl() and next_token()
+                node_id = find_node_id(t, "VarDecl")
+                node_label = "  " + str(t.lineno) + "." + "VarDecl:"
+                astree.create_node( node_label, node_id, parent=parent)
+                
+                parent = node_id
+
+                node_label = "   " + "." + "Type: " + dataType
+                astree.create_node( node_label, find_node_id(t, "Type"), parent=parent)
+
+                node_label = "  " + str(t.lineno) + "." + "Identifier: " + ident
+                astree.create_node( node_label, find_node_id(t, "Identifier"), parent=parent)
+
+                return variableDecl() and next_token() and update_parent(prevPar)
         else:
             printDebug("Syntax Error 1 " + str(t))
             handleError(t)
@@ -130,17 +146,46 @@ def functionDecl():
 
 def formals():
     printDebug("------formals")
+    global parent
+    prevPar = parent
     if t.value == tokens.T_RP:
         return True
     while True:
         if t.value in tokens.type_list:
+            dataType = t.value
             next_token()
             if(t.type == tokens.T_Identifier):
+                ident = t.value
                 next_token()
                 if t.value == tokens.T_Comma and (next_token() and t.value != tokens.T_RP):
+                    node_id = find_node_id(t, "VarDecl")
+                    node_label = "  " + str(t.lineno) + "." + "(formals) VarDecl:"
+                    astree.create_node( node_label, node_id, parent=parent)
+                    
+                    parent = node_id
+
+                    node_label = "   " + "." + "Type: " + dataType
+                    astree.create_node( node_label, find_node_id(t, "Type"), parent=parent)
+
+                    node_label = "  " + str(t.lineno) + "." + "Identifier: " + ident
+                    astree.create_node( node_label, find_node_id(t, "Identifier"), parent=parent)
+                    update_parent(prevPar)
                     continue
                 elif t.value == tokens.T_RP:
-                    return True
+
+                    node_id = find_node_id(t, "VarDecl")
+                    node_label = "  " + str(t.lineno) + "." + "(formals) VarDecl:"
+                    astree.create_node( node_label, node_id, parent=parent)
+                    
+                    parent = node_id
+
+                    node_label = "   " + "." + "Type: " + dataType
+                    astree.create_node( node_label, find_node_id(t, "Type"), parent=parent)
+
+                    node_label = "  " + str(t.lineno) + "." + "Identifier: " + ident
+                    astree.create_node( node_label, find_node_id(t, "Identifier"), parent=parent)
+
+                    return True and update_parent(prevPar)
             else:
                 handleError(t)
                 return False
@@ -149,6 +194,7 @@ def stmtBlock():
     printDebug("------stmtBlock" + str(t))
     
     global parent
+    prevPar = parent
     node_label = "   " + "." + "(body) StmtBlock:"
     node_id = find_node_id(t, "StmtBlock")
     astree.create_node( node_label, node_id , parent= parent)
@@ -157,12 +203,12 @@ def stmtBlock():
     if t.value == tokens.T_LC:
         next_token()
         if t.value == tokens.T_RC:
-            return True
+            return True and update_parent(prevPar)
         else:
             stmtBlockParam = variableDecl_2() and t.value == tokens.T_RC
             printDebug("~~~~~~ " + str(t))
             next_token()
-            return stmtBlockParam
+            return stmtBlockParam and update_parent(prevPar)
 
 def variableDecl():
     printDebug("------variableDecl")
@@ -250,7 +296,7 @@ def stmt():
         printDebug("Semicolon found from stmt")
         return True
     
-    elif expr() and t.value == tokens.T_SemiColon: #need to work:  prev work expr() semi nexttok stmt
+    elif initExprTree() and expr() and t.value == tokens.T_SemiColon: #need to work:  prev work expr() semi nexttok stmt
         printDebug("Expr and Semicolon found from stmt " + str(t.value))
         return True
         #printDebug("ret from stmt ")
@@ -358,20 +404,27 @@ def breakStmt():
 
 def returnStmt():
     printDebug("------returnStmt")
+    global parent
+    prevPar = parent
+    node_id = find_node_id(t, "ReturnStmt")
+    node_label = "  " + str(t.lineno) + "." + "ReturnStmt:"
+    astree.create_node( node_label, node_id, parent= parent)
+    parent = node_id
+
     if t.value == tokens.T_SemiColon:
         printDebug("return done without expr" + str(t))
-        return True
-    elif expr() and t.value == tokens.T_SemiColon and next_token(): # next_token should be removed?
+        return True and update_parent(prevPar)
+    elif initExprTree() and expr() and t.value == tokens.T_SemiColon and next_token(): # next_token should be removed?
         printDebug("return done with expr" + str(t))
-        return True
+        return True and update_parent(prevPar)
     else:
         handleError(t)
         return False
         
 def printStmt():
     printDebug("------printStmt")
-
     global parent
+    prevPar = parent
     node_id = find_node_id(t, "PrintStmt")
     node_label = "   " + "." + "PrintStmt:"
     astree.create_node( node_label, node_id, parent= parent)
@@ -387,13 +440,14 @@ def printStmt():
                 return False
             if t.value == tokens.T_Comma:
                 printDebug("Comma inside printStmt")
+                update_parent(prevPar)
                 continue
             elif t.value == tokens.T_RP:
                 printDebug("RightParen found in printStmt")
                 next_token()
                 if t != None and t.value == tokens.T_SemiColon:
                     printDebug("semicolon after printDebug")
-                    return True
+                    return True and update_parent(prevPar)
                 else:
                     handleError(t)
                     return False
@@ -401,9 +455,37 @@ def printStmt():
         handleError(t)
         return False
 
+exprTreeRoot = ""
+lastTreeRoot = ""
+currentTreeRoot = ""
+prevOperator = ""
+assignTreeRoot = ""
+exprTree = Tree()
+
+def initExprTree():
+    global exprTree
+    exprTree = Tree()
+    global exprTreeRoot
+    exprTreeRoot = ""
+    global lastTreeRoot
+    lastTreeRoot = ""
+    global prevOperator
+    prevOperator = ""
+    global currentTreeRoot
+    currentTreeRoot = ""
+    global assignTreeRoot
+    assignTreeRoot = ""
+    return True
 
 def expr():
     printDebug("------expr " + str(t))
+    global exprTreeRoot
+    global lastTreeRoot
+    global assignTreeRoot
+    global exprTree
+    global prevOperator
+    global currentTreeRoot
+    prevPar = parent
 
     if t.value == tokens.T_Minus:
         return next_token() and expr()
@@ -423,18 +505,88 @@ def expr():
         return next_token() and expr()
 
     elif t.type == tokens.T_Identifier:
+        ident = t.value
         next_token()
+
+        if(t.value == tokens.T_Equal):
+            exprType = "AssignExpr"
+            astree.create_node("  " + str(t.lineno) + "." + exprType + ":", find_node_id(t, exprType), parent=prevPar)
+            assignTreeRoot = find_node_id(t, exprType)
+            astree.create_node("  " + str(t.lineno) + "." + "FieldAccess" + ":", find_node_id(t, "FieldAccess"), parent=assignTreeRoot)
+            astree.create_node("  " + str(t.lineno) + "." + "Identifier" + ": " + ident, find_node_id(t, "Identifier"), parent=find_node_id(t, "FieldAccess"))
+            astree.create_node("  " + str(t.lineno) + "." + "Operator" + ": " + str(t.value), find_node_id(t, "Operator"), parent=assignTreeRoot)
+        else: # todo: what happens when (
+            exprType = "ArithmeticExpr"
+        
+        if assignTreeRoot == "":
+            assignTreeRoot = prevPar
+
         if t.value == tokens.T_LP:
             next_token()
             return actuals()
-        elif (t.value == tokens.T_Equal) or (t.value in tokens.op_list): 
-            return next_token() and expr()
+
+        elif (t.value == tokens.T_Equal) or (t.value in tokens.op_list):
+
+            if t.value in tokens.op_list:
+                currOperator = str(t.value)
+                if prevOperator == "":
+                    exprTreeRoot = find_node_id(t, exprType)
+                    exprTree.create_node("  " + str(t.lineno) + "." + exprType + ":", exprTreeRoot)
+                    exprTree.create_node("  " + str(t.lineno) + "." + "FieldAccess" + ":", find_node_id(t, "FieldAccess"), parent=exprTreeRoot)
+                    exprTree.create_node("  " + str(t.lineno) + "." + "Identifier" + ": " + ident, find_node_id(t, "Identifier"), parent=find_node_id(t, "FieldAccess"))
+                    exprTree.create_node("  " + str(t.lineno) + "." + "Operator" + ": " + currOperator, find_node_id(t, "Operator"), parent=exprTreeRoot)
+                    prevOperator = currOperator
+                    lastTreeRoot = exprTreeRoot
+
+                elif tokens.precedence_list[prevOperator] >= tokens.precedence_list[currOperator]:
+
+                    if currentTreeRoot != "":
+                        exprTree.create_node("  " + str(t.lineno) + ".FieldAccess:", find_node_id(t, "FieldAccess"), parent=currentTreeRoot)
+                        exprTree.create_node("  " + str(t.lineno) + ".Identifier: " + ident, find_node_id(t, "Identifier"), parent=find_node_id(t, "FieldAccess"))
+                        currentTreeRoot = ""
+                    
+                    else:
+                        exprTree.create_node("  " + str(t.lineno) + ".FieldAccess:", find_node_id(t, "FieldAccess"), parent=exprTreeRoot)
+                        exprTree.create_node("  " + str(t.lineno) + ".Identifier: " + ident, find_node_id(t, "Identifier"), parent=find_node_id(t, "FieldAccess"))
+                    
+                    tempTree=Tree()
+                    tempTreeRoot = find_node_id(t, exprType)
+                    tempTree.create_node("  " + str(t.lineno) + "." + exprType + ":", tempTreeRoot)
+                    tempTree.paste(tempTreeRoot, exprTree)
+                    tempTree.create_node("  " + str(t.lineno) + ".Operator: " + currOperator, find_node_id(t, "Operator"), parent=tempTreeRoot)            
+                    exprTree = tempTree
+                    exprTreeRoot = tempTreeRoot
+                    prevOperator = currOperator
+                    lastTreeRoot = tempTreeRoot
+
+                elif tokens.precedence_list[prevOperator] < tokens.precedence_list[currOperator]:
+                    tempTree=Tree()
+                    tempTreeRoot = find_node_id(t, exprType)
+                    tempTree.create_node("  " + str(t.lineno) + "." + exprType + ":", tempTreeRoot)
+                    tempTree.create_node("  " + str(t.lineno) + ".FieldAccess:", find_node_id(t, "FieldAccess"), parent=tempTreeRoot)
+                    tempTree.create_node("  " + str(t.lineno) + ".Identifier: " + ident, find_node_id(t, "Identifier"), parent=find_node_id(t, "FieldAccess"))
+                    tempTree.create_node("  " + str(t.lineno) + ".Operator: " + currOperator, find_node_id(t, "Operator"), parent=tempTreeRoot)            
+                    exprTree.paste(exprTreeRoot, tempTree)
+                    prevOperator = currOperator
+                    lastTreeRoot = tempTreeRoot
+                    currentTreeRoot = tempTreeRoot
+                
+            next_token()
+            return expr()
         else:
             printDebug("ture from expr Identifier" + str(t.value))
-            return True
+            if exprTree:
+                exprTree.create_node("  " + str(t.lineno) + "." + "FieldAccess" + ":", find_node_id(t, "FieldAccess"), parent=lastTreeRoot)
+                exprTree.create_node("  " + str(t.lineno) + "." + "Identifier" + ": " + ident, find_node_id(t, "Identifier"), parent=find_node_id(t, "FieldAccess"))
+                astree.paste(assignTreeRoot, exprTree)
+                initExprTree()
+            else:
+                astree.create_node("  " + str(t.lineno) + "." + "FieldAccess" + ":", find_node_id(t, "FieldAccess"), parent=assignTreeRoot)
+                astree.create_node("  " + str(t.lineno) + "." + "Identifier" + ": " + ident, find_node_id(t, "Identifier"), parent=find_node_id(t, "FieldAccess"))
+            return True and update_parent(prevPar)
     
     elif t.type in tokens.const_list:
-        
+        # need to update for constant without args
         constant = str(t.type).split("_")[1]
         node_id = find_node_id(t, constant)
         node_label = "  " + str(t.lineno) + "." + "(args) " + constant + ": " + t.value
@@ -489,6 +641,7 @@ def actuals():
 def main():
     printDebug(program_start())
     if errorFound == False:
+        print()
         astree.show(key = False, line_type = 'ascii-sp')
 
 if __name__ == "__main__":

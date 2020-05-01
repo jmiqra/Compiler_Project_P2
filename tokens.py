@@ -47,4 +47,5 @@ T_RC = "}"
 type_list = [T_Int, T_Double, T_Bool, T_String]
 op_list = [T_GreaterEqual, T_Greater, T_LessEqual, T_Less, T_EqualEqual, 
             T_NotEqual, T_Multiply, T_Divide, T_Modulus, T_Plus, T_Minus, T_And, T_Or]
+precedence_list = {"!": 8, "-": 8 ,"*": 7, "/": 7, "%": 7 , "+": 6, "-": 6, "<":5, "<=": 5, ">": 5, ">=": 5, "==": 4, "!=": 4, "&&": 3, "||": 2, "=": 1}
 const_list = [T_IntConstant, T_DoubleConstant, T_BoolConstant, T_StringConstant, T_Null]
