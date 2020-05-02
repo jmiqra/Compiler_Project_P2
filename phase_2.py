@@ -373,8 +373,15 @@ def ifStmt():
 
 def whileStmt():
     printDebug("------whileStmt")
+
+    prevPar = parent
+    node_id = find_node_id(t, "WhileStmt")
+    astree.create_node( "   " + "$" + "WhileStmt:", node_id, parent= prevPar)
+    update_parent(node_id)
+    set_prefix("(test) ")
+    
     if t.value == tokens.T_LP:
-        whileParam = next_token() and expr() and t.value == tokens.T_RP
+        whileParam = next_token() and initExprTree() and expr() and t.value == tokens.T_RP
         if not whileParam:
             printDebug("error from whileStmt")
             handleError(t)
@@ -384,41 +391,55 @@ def whileStmt():
             handleError(t)
             return False
         printDebug("true for while----------------------")
-        return True
+        return True and clear_prefix() and update_parent(prevPar)
     else:
         handleError(t)
         return False 
 
 def forStmt():
     printDebug("------forStmt")
+
+    prevPar = parent
+    node_id = find_node_id(t, "ForStmt")
+    astree.create_node( "   " + "$" + "ForStmt:", node_id, parent= prevPar)
+    update_parent(node_id)
+    
+
     if t.value == tokens.T_LP:
         printDebug("LeftParen found forStmt")
+        set_prefix("(init) ")
         #1 for null init
         if next_token() and t.value == tokens.T_SemiColon:
             printDebug("First expr not present inside forStmt")
+            astree.create_node( "   " + "$" + prefix + "Empty:", find_node_id(t, "Empty"), parent= node_id)
             pass
         #1 for init
-        elif not expr() or t.value != tokens.T_SemiColon:
+        elif initExprTree() and not expr() or t.value != tokens.T_SemiColon:
             printDebug("false for wrong first expr part inside forStmt")
             handleError(t)
             return False
-        
-        #2 for init and cond
+        clear_prefix()
+
+        set_prefix("(test) ")
+        #2 for cond test
         printDebug("inside forStmt token -> " + str(t))
         next_token()
-        if not expr() or not t.value == tokens.T_SemiColon:
+        if initExprTree() and not expr() or not t.value == tokens.T_SemiColon:
             printDebug("False for wrong second part inside forStmt")
             handleError(t)
             return False
+        clear_prefix()
 
-        #3 for init cond update
+        #3 for update step
+        set_prefix("(step) ")
         next_token()
         printDebug("start forStmt last part -> " + str(t))
         if t.value == tokens.T_RP:
             printDebug("No third part inside forStmt")
-            return next_token() and stmt()
-        elif expr() and t.value == tokens.T_RP:
-            return next_token() and stmt()
+            astree.create_node( "   " + "$" + prefix + "Empty:", find_node_id(t, "Empty"), parent= node_id)
+            return next_token() and stmt() and clear_prefix() and update_parent(prevPar)
+        elif initExprTree() and expr() and t.value == tokens.T_RP:
+            return next_token() and stmt() and clear_prefix() and update_parent(prevPar)
     else:
         handleError(t)
         return False
@@ -427,19 +448,25 @@ def breakStmt():
     printDebug("------breakStmt")
     if t.value == tokens.T_SemiColon:
         printDebug("True from breakStmt" + str(t))
-        return True
+
+        prevPar = parent
+        astree.create_node( "  " + str(t.lineno) + "$" + prefix + "BreakStmt:", find_node_id(t, "BreakStmt"), parent= prevPar)
+
+        return True and update_parent(prevPar)
+    else:
+        handleError(t)
+        return False
 
 def returnStmt():
     printDebug("------returnStmt")
-    global parent
     prevPar = parent
     node_id = find_node_id(t, "ReturnStmt")
     node_label = "  " + str(t.lineno) + "$" + "ReturnStmt:"
-    astree.create_node( node_label, node_id, parent= parent)
-    parent = node_id
+    astree.create_node( node_label, node_id, parent= prevPar)
 
     if t.value == tokens.T_SemiColon:
         printDebug("return done without expr" + str(t))
+        astree.create_node( "   " + "$" + "Empty:", find_node_id(t, "Empty"), parent= node_id)
         return True and update_parent(prevPar)
     elif initExprTree() and expr() and t.value == tokens.T_SemiColon and next_token(): # next_token should be removed?
         printDebug("return done with expr" + str(t))
@@ -453,7 +480,7 @@ def printStmt():
     prevPar = parent
     node_id = find_node_id(t, "PrintStmt")
     node_label = "   " + "$" + "PrintStmt:"
-    astree.create_node( node_label, node_id, parent= parent)
+    astree.create_node( node_label, node_id, parent= prevPar)
     set_prefix("(args) ")
     if t.value == tokens.T_LP:
         while True and update_parent(node_id):
@@ -547,7 +574,8 @@ def expr():
 
         if(t.value == tokens.T_Equal):
             exprType = "AssignExpr"
-            astree.create_node("  " + str(t.lineno) + "$" + exprType + ":", find_node_id(t, exprType), parent=prevPar)
+            astree.create_node("  " + str(t.lineno) + "$" + prefix + exprType + ":", find_node_id(t, exprType), parent=prevPar)
+            clear_prefix()
             assignTreeRoot = find_node_id(t, exprType)
             astree.create_node("  " + str(t.lineno) + "$" + "FieldAccess" + ":", find_node_id(t, "FieldAccess"), parent=assignTreeRoot)
             astree.create_node("  " + str(t.lineno) + "$" + "Identifier" + ": " + ident, find_node_id(t, "Identifier"), parent=find_node_id(t, "FieldAccess"))
