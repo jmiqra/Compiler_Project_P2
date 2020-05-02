@@ -222,7 +222,7 @@ class Tree(object):
             label = get_label(node)
             #print("printing label ****************************")
             #print(label)	
-            labels = label.split(".")
+            labels = label.split("$")
             length = len(labels)
             if length == 2:		
                 func('{0}{1}'.format(labels[0] + pre, labels[1]).encode('utf-8'))
