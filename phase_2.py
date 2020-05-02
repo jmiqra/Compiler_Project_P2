@@ -519,6 +519,9 @@ def expr():
                 return True
 
     elif t.value == tokens.T_Not:
+        astree.create_node("  " + str(t.lineno) + ".LogicalExpr:", find_node_id(t, "LogicalExpr"), parent=prevPar)
+        astree.create_node("  " + str(t.lineno) + ".Operator: " + str(t.value), find_node_id(t, "Operator"), parent=find_node_id(t, "LogicalExpr"))
+        update_parent(find_node_id(t, "LogicalExpr"))
         return next_token() and expr()
 
     elif t.type == tokens.T_Identifier:
@@ -532,15 +535,24 @@ def expr():
             astree.create_node("  " + str(t.lineno) + "." + "FieldAccess" + ":", find_node_id(t, "FieldAccess"), parent=assignTreeRoot)
             astree.create_node("  " + str(t.lineno) + "." + "Identifier" + ": " + ident, find_node_id(t, "Identifier"), parent=find_node_id(t, "FieldAccess"))
             astree.create_node("  " + str(t.lineno) + "." + "Operator" + ": " + str(t.value), find_node_id(t, "Operator"), parent=assignTreeRoot)
-        else: # todo: what happens when (
+        elif t.value in tokens.arithmatic_op:
             exprType = "ArithmeticExpr"
+        elif t.value in tokens.relational_op:
+            exprType = "RelationalExpr"
+        elif t.value in tokens.equality_op:
+            exprType = "EqualityExpr"
+        elif t.value in tokens.logical_op:
+            exprType = "LogicalExpr"
         
         if assignTreeRoot == "":
             assignTreeRoot = prevPar
 
         if t.value == tokens.T_LP:
+            astree.create_node("  " + str(t.lineno) + ".Call:", find_node_id(t, "Call"), parent= prevPar)
+            astree.create_node("  " + str(t.lineno) + "." + "Identifier" + ": " + ident, find_node_id(t, "Identifier"), parent=find_node_id(t, "Call"))
+            update_parent(find_node_id(t, "Call"))
             next_token()
-            return actuals()
+            return actuals() and update_parent(prevPar)
 
         elif (t.value == tokens.T_Equal) or (t.value in tokens.op_list):
 
@@ -618,7 +630,14 @@ def expr():
         
         next_token()
         
-        exprType = "ArithmeticExpr"
+        if t.value in tokens.arithmatic_op:
+            exprType = "ArithmeticExpr"
+        elif t.value in tokens.relational_op:
+            exprType = "RelationalExpr"
+        elif t.value in tokens.equality_op:
+            exprType = "EqualityExpr"
+        elif t.value in tokens.logical_op:
+            exprType = "LogicalExpr"
         if assignTreeRoot == "":
             assignTreeRoot = prevPar
 
@@ -671,6 +690,7 @@ def expr():
             printDebug("ture from expr Constant" + str(t.value))
 
             if exprTree:
+                print(constantType ," ", constantVal, " ", constant, " " , lastTreeRoot)
                 exprTree.create_node("  " + str(t.lineno) + "." + constantType + ": " +  constantVal, find_node_id(t, constantType), parent=lastTreeRoot)
                 astree.paste(assignTreeRoot, exprTree)
                 initExprTree()
@@ -698,7 +718,7 @@ def actuals():
 
     while True:
         printDebug("insilde actual loop " + str(t))    
-        if not expr():
+        if initExprTree() and not expr():
             handleError(t)
             return False
         
