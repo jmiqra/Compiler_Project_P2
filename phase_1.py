@@ -80,7 +80,7 @@ operators = {
 	'RightCurly' : '}'
 }
 
-t_ignore = r' '
+t_ignore = ' \t'
 t_Plus = r'\+'
 t_Minus = r'\-'
 t_Multiply = r'\*'
