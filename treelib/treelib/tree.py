@@ -238,7 +238,7 @@ class Tree(object):
         # render characters
         dt = {
             'ascii': ('|', '|-- ', '+-- '),
-			'ascii-sp': (' ', '    ', '    '),
+			'ascii-sp': (' ', '   ', '   '),
             'ascii-ex': ('\u2502', '\u251c\u2500\u2500 ', '\u2514\u2500\u2500 '),
             'ascii-exr': ('\u2502', '\u251c\u2500\u2500 ', '\u2570\u2500\u2500 '),
             'ascii-em': ('\u2551', '\u2560\u2550\u2550 ', '\u255a\u2550\u2550 '),
@@ -930,7 +930,7 @@ class Tree(object):
                 st[node_n].set_predecessor(None, st.identifier)
         return st
 
-    def update_node(self, nid, **attrs):
+    def update_node(self, nid, val):
         """
         Update node's attributes.
 
@@ -939,6 +939,8 @@ class Tree(object):
         :return: None
         """
         cn = self[nid]
+        setattr(cn, "tag", val)
+        """
         for attr, val in attrs.items():
             if attr == 'identifier':
                 # Updating node id meets following contraints:
@@ -964,6 +966,7 @@ class Tree(object):
                     self.root = val
             else:
                 setattr(cn, attr, val)
+        """
 
     def to_dict(self, nid=None, key=None, sort=True, reverse=False, with_data=False):
         """Transform the whole tree into a dict."""
