@@ -78,6 +78,7 @@ def handleError(t):
         printFunction(err_str)
         printFunction("*** syntax error")
         print()
+        print()
         errorFound = True
         return True
     else:
@@ -326,46 +327,54 @@ def stmt():
     elif initExprTree() and expr() and t.value == tokens.T_SemiColon: #need to work:  prev work expr() semi nexttok stmt
         printDebug("Expr and Semicolon found from stmt " + str(t.value))
         return True
-        #printDebug("ret from stmt ")
-        #var = expr() and t.value == tokens.T_SemiColon and next_token()     
-        #work for single statement
-    #elif t != None:
-    #    printDebug("true from stmt last else")
-    #    return stmt()
+    
+    else:
+        handleError(t)
+        return False
 
 def ifStmt():
-    printDebug("----XXXXXXXXXXXXXXXXXXXXXXXXXx--ifStmt")
+    printDebug("-----ifStmt")
+
+    prevPar = parent
+    node_id = find_node_id(t, "IfStmt")
+    astree.create_node( "   " + "$" + "IfStmt:", node_id, parent= prevPar)
+    update_parent(node_id)
+
     if t.value == tokens.T_LP:
-        ifParam = next_token() and expr() and t.value == tokens.T_RP
+        set_prefix("(test) ")
+        ifParam = next_token() and initExprTree() and expr() and t.value == tokens.T_RP
         if not ifParam:
             printDebug("error from if ")
             handleError(t)
             return False
         
+        clear_prefix()
         printDebug("inside ifParam true" + t.value)
         
+        set_prefix("(then) ")
         if next_token() and not stmt():
             printDebug("false from ifStmt")
             handleError(t)
             return False
-
+        clear_prefix()
         #if(t!=None and t.value != tokens.T_Else):
         if t.value == tokens.T_SemiColon:
             next_token()
         
         if t != None and t.value == tokens.T_Else:
-            printDebug("else found----------------------------------------------------------------------")
+            set_prefix("(else) ")
+            printDebug("else found")
             next_token()
             if not stmt():
                 printDebug("False from if.. else..")
                 handleError(t)
                 return False
             else:
-                printDebug("true for if with else----------------------")
-                return True
+                printDebug("true for if with else..")
+                return True and clear_prefix() and update_parent(prevPar)
         else:
             printDebug("true for if----------------------")
-            return True
+            return True and clear_prefix() and update_parent(prevPar)
     else:
         handleError(t)
         return False
